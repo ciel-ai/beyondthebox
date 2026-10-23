@@ -1,0 +1,491 @@
+// Beyond the Limits — A Business Conclave 2026
+// Money is always integer paise. Personal data is encrypted in the app (*Enc) with a
+// keyed HMAC blind index (*Idx) for exact-match lookups. See docs/technical-plan.md.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TierCode {
+  STANDARD
+  PREMIUM
+  VIP
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  EXPIRED
+  CANCELLED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum AttemptStatus {
+  CREATED
+  PAID
+  FAILED
+  ABANDONED
+}
+
+enum PaymentStatus {
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  LAPSED
+  REFUNDED
+}
+
+enum PaymentDecision {
+  PENDING
+  CAPTURE
+  DO_NOT_CAPTURE
+  REFUND
+}
+
+enum TicketStatus {
+  VALID
+  CANCELLED
+  REFUNDED
+}
+
+enum JobKind {
+  EMAIL
+  CAPTURE
+  REFUND
+  ADMIN_ALERT
+}
+
+enum PaymentsMode {
+  TEST
+  LIVE
+}
+
+enum FeeMode {
+  NONE
+  FIXED_PER_TICKET
+  PERCENT
+}
+
+enum LegalKind {
+  PRIVACY
+  TERMS
+  REFUND
+}
+
+enum CancellationStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum FunnelStep {
+  VISIT
+  CHECKOUT_STARTED
+  PAID
+}
+
+/// Singleton row (id = 1). Editable in the admin (Phase 2).
+model EventSettings {
+  id                  Int          @id @default(1)
+  name                String
+  subtitle            String
+  tagline             String
+  startsAt            DateTime
+  venueName           String?
+  venueAddress        String?
+  contactEmail        String?
+  contactPhone        String?
+  capacityTotal       Int          @default(1000)
+  /// Seat split is a placeholder until the organiser confirms it (go-live gate).
+  capacityConfirmed   Boolean      @default(false)
+  maxTicketsPerOrder  Int          @default(10)
+  holdMinutes         Int          @default(15)
+  /// 1800 = 18.00%. Default flagged "confirm with accountant" until taxConfirmed.
+  gstRateBps          Int          @default(1800)
+  pricesIncludeGst    Boolean      @default(false)
+  taxConfirmed        Boolean      @default(false)
+  feeMode             FeeMode      @default(NONE)
+  /// Paise per ticket (FIXED_PER_TICKET) or basis points (PERCENT).
+  feeValue            Int          @default(0)
+  feeTaxable          Boolean      @default(true)
+  organiserLegalName  String?
+  organiserGstin      String?
+  organiserAddress    String?
+  /// Two-digit GST state code, e.g. "29".
+  organiserStateCode  String?
+  sacCode             String?
+  nominationsOpenAt   DateTime?
+  nominationsCloseAt  DateTime?
+  retentionMonths     Int?
+  paymentsMode        PaymentsMode @default(TEST)
+  /// Minutes Razorpay keeps an uncaptured payment before auto-refunding it.
+  captureWindowMins   Int          @default(60)
+  refundSpeed         String       @default("normal")
+  updatedAt           DateTime     @updatedAt
+}
+
+model TicketTier {
+  id             String       @id @default(cuid())
+  code           TierCode     @unique
+  name           String
+  pricePaise     Int
+  /// CHECK (soldCount BETWEEN 0 AND capacity) is added in the migration.
+  capacity       Int
+  soldCount      Int          @default(0)
+  /// Empty → the site shows "[Inclusions to be confirmed]".
+  inclusions     String[]
+  salesOpen      Boolean      @default(true)
+  sortOrder      Int
+  serialPrefix   String
+  lastSerial     Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  bookings       Booking[]
+  holds          SeatHold[]
+  tickets        Ticket[]
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  /// BTL26-XXXXXX, no ambiguous characters.
+  reference        String        @unique
+  status           BookingStatus @default(PENDING)
+  tierId           String
+  tier             TicketTier    @relation(fields: [tierId], references: [id])
+  quantity         Int
+  buyerNameEnc     String
+  buyerEmailEnc    String
+  buyerEmailIdx    String
+  buyerPhoneEnc    String
+  buyerPhoneIdx    String
+  buyerCompanyEnc  String?
+  buyerGstinEnc    String?
+  /// Server-computed snapshot. The amount sent to Razorpay always comes from totalPaise.
+  unitPricePaise   Int
+  subtotalPaise    Int
+  discountPaise    Int           @default(0)
+  taxablePaise     Int
+  taxPaise         Int
+  feePaise         Int
+  feeTaxPaise      Int
+  totalPaise       Int
+  gstRateBps       Int
+  pricesIncludeGst Boolean
+  termsVersion     String?
+  termsAcceptedAt  DateTime?
+  paymentsMode     PaymentsMode
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  confirmedAt      DateTime?
+  failedAt         DateTime?
+  expiredAt        DateTime?
+  attendees        Attendee[]
+  holds            SeatHold[]
+  attempts         PaymentAttempt[]
+  payments         Payment[]
+  tickets          Ticket[]
+  invoice          Invoice?
+  accessTokens     BookingAccessToken[]
+  cancellations    CancellationRequest[]
+
+  @@index([buyerEmailIdx])
+  @@index([status, createdAt])
+}
+
+model SeatHold {
+  id          String     @id @default(cuid())
+  bookingId   String
+  booking     Booking    @relation(fields: [bookingId], references: [id])
+  tierId      String
+  tier        TicketTier @relation(fields: [tierId], references: [id])
+  quantity    Int
+  expiresAt   DateTime
+  releasedAt  DateTime?
+  /// Set when the seats move into TicketTier.soldCount.
+  convertedAt DateTime?
+  /// Set if converted seats are given back (capture failed after seats were secured).
+  returnedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([tierId, expiresAt])
+  @@index([bookingId])
+}
+
+model Attendee {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  position  Int
+  nameEnc   String
+  emailEnc  String
+  emailIdx  String
+  phoneEnc  String
+  phoneIdx  String
+  ticket    Ticket?
+
+  @@unique([bookingId, position])
+  @@index([emailIdx])
+}
+
+model PaymentAttempt {
+  id              String        @id @default(cuid())
+  bookingId       String
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  provider        String
+  providerOrderId String?       @unique
+  /// Written before the gateway call, so a double-click can't create two orders.
+  idempotencyKey  String        @unique
+  amountPaise     Int
+  status          AttemptStatus @default(CREATED)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  payments        Payment[]
+
+  @@index([bookingId])
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  bookingId         String
+  booking           Booking         @relation(fields: [bookingId], references: [id])
+  attemptId         String?
+  attempt           PaymentAttempt? @relation(fields: [attemptId], references: [id])
+  provider          String
+  /// Unique: duplicate callbacks for the same payment can never act twice.
+  providerPaymentId String          @unique
+  providerOrderId   String
+  amountPaise       Int
+  currency          String
+  method            String?
+  status            PaymentStatus
+  decision          PaymentDecision @default(PENDING)
+  decisionReason    String?
+  seatsSecuredAt    DateTime?
+  capturedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  refunds           Refund[]
+
+  @@index([bookingId])
+}
+
+model Refund {
+  id               String   @id @default(cuid())
+  paymentId        String
+  payment          Payment  @relation(fields: [paymentId], references: [id])
+  providerRefundId String?  @unique
+  amountPaise      Int
+  reason           String
+  status           String
+  automatic        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Ticket {
+  id            String       @id @default(cuid())
+  bookingId     String
+  booking       Booking      @relation(fields: [bookingId], references: [id])
+  /// Unique: a booking can never be issued two sets of tickets.
+  attendeeId    String       @unique
+  attendee      Attendee     @relation(fields: [attendeeId], references: [id])
+  tierId        String
+  tier          TicketTier   @relation(fields: [tierId], references: [id])
+  serial        String       @unique
+  status        TicketStatus @default(VALID)
+  createdAt     DateTime     @default(now())
+  checkedInAt   DateTime?
+  checkedInBy   String?
+
+  @@index([bookingId])
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  /// e.g. BTL/26-27/00001 (≤16 chars). TEST mode uses the TST series.
+  number         String   @unique
+  series         String
+  financialYear  String
+  seq            Int
+  bookingId      String   @unique
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  issuedAt       DateTime @default(now())
+  /// Encrypted JSON: seller and buyer parties as printed.
+  partiesEnc     String
+  taxablePaise   Int
+  cgstPaise      Int
+  sgstPaise      Int
+  igstPaise      Int
+  feePaise       Int
+  feeTaxPaise    Int
+  totalPaise     Int
+  isTest         Boolean
+
+  @@unique([series, financialYear, seq])
+}
+
+model InvoiceCounter {
+  series        String
+  financialYear String
+  last          Int    @default(0)
+
+  @@id([series, financialYear])
+}
+
+/// Transactions log: every verify call, gateway call and webhook.
+model PaymentEvent {
+  id              String   @id @default(cuid())
+  provider        String
+  source          String
+  type            String
+  /// x-razorpay-event-id for webhooks. Unique → replays are ignored.
+  providerEventId String?  @unique
+  bookingId       String?
+  providerPaymentId String?
+  providerOrderId String?
+  amountPaise     Int?
+  signatureValid  Boolean
+  outcome         String?
+  /// Raw payload, encrypted (it contains the buyer's email and phone).
+  payloadEnc      String?
+  receivedAt      DateTime @default(now())
+
+  @@index([receivedAt])
+  @@index([bookingId])
+}
+
+/// Transactional outbox. Payloads carry IDs only, never plaintext personal data.
+model Job {
+  id         String    @id @default(cuid())
+  kind       JobKind
+  payload    Json
+  dedupeKey  String    @unique
+  runAt      DateTime  @default(now())
+  attempts   Int       @default(0)
+  lockedAt   DateTime?
+  doneAt     DateTime?
+  failedAt   DateTime?
+  lastError  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([doneAt, failedAt, runAt])
+}
+
+model BookingAccessToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  bookingId String
+  booking   Booking   @relation(fields: [bookingId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  /// Links in confirmation emails can be reused until expiry; Find-my-booking links work once.
+  multiUse  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+}
+
+model CancellationRequest {
+  id        String             @id @default(cuid())
+  bookingId String
+  booking   Booking            @relation(fields: [bookingId], references: [id])
+  reasonEnc String
+  status    CancellationStatus @default(REQUESTED)
+  createdAt DateTime           @default(now())
+  decidedAt DateTime?
+  decidedBy String?
+  note      String?
+
+  @@index([status])
+}
+
+/// Cookieless daily counts for the conversion chart. No personal data.
+model FunnelCount {
+  day   DateTime   @db.Date
+  step  FunnelStep
+  count Int        @default(0)
+
+  @@id([day, step])
+}
+
+/* ---------- content (managed in the admin from Phase 2; seeded now) ---------- */
+
+model Speaker {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  role         String
+  bio          String?
+  sessionTitle String?
+  sessionTime  String?
+  photoUrl     String?
+  xUrl         String?
+  linkedinUrl  String?
+  instagramUrl String?
+  sortOrder    Int
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AgendaItem {
+  id          String  @id @default(cuid())
+  time        String
+  title       String
+  description String?
+  sortOrder   Int
+}
+
+model Faq {
+  id        String  @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int
+  published Boolean @default(true)
+}
+
+model Sponsor {
+  id         String  @id @default(cuid())
+  name       String
+  tier       String
+  tierOrder  Int
+  logoUrl    String
+  websiteUrl String?
+  sortOrder  Int
+  published  Boolean @default(true)
+}
+
+model AwardCategory {
+  id                String  @id @default(cuid())
+  name              String
+  description       String?
+  eligibility       String?
+  requiresDocuments Boolean @default(false)
+  sortOrder         Int
+  published         Boolean @default(true)
+}
+
+model ExhibitionPackage {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  priceNote   String?
+  sortOrder   Int
+}
+
+model LegalDocument {
+  id         String    @id @default(cuid())
+  kind       LegalKind
+  version    String
+  title      String
+  body       String
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([kind, version])
+}

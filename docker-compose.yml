@@ -1,0 +1,16 @@
+# Local development only. Staging and production use Supabase.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: btl
+      POSTGRES_PASSWORD: btl_local_only
+      POSTGRES_DB: btl
+    ports:
+      - "5544:5432"
+    command: ["postgres", "-c", "max_connections=300"]
+    volumes:
+      - btl_pg:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+volumes:
+  btl_pg:
