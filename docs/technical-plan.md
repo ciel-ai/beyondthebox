@@ -323,6 +323,7 @@ Tests cover the failure path, the lapsed path, exhausted retries and the 10-minu
 - **Staging** is a Vercel preview deployment of the `staging` branch, with its own Supabase project, Upstash database, Resend key and `ADMIN_ALERT_EMAIL` (env validation requires them outside local).
 - **Webhooks:** preview deployments are behind Vercel's Standard Protection by default, which would reject Razorpay's webhooks. Razorpay can't send custom headers, so the webhook URL carries Vercel's automation bypass as a query parameter (documented by Vercel for exactly this case):
   `https://<staging host>/api/webhooks/razorpay?x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>`
+- **Production is different (decided 23 Oct 2026):** the production webhook URL must **not** carry the bypass parameter. It is `https://<production domain>/api/webhooks/razorpay`, plain. Vercel's Standard Protection doesn't cover production domains, so no bypass is needed, and a bypass secret in a live webhook URL would leak a credential into the Razorpay dashboard and its logs. Only staging uses the bypass.
 - **Events to tick:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, `refund.failed`.
 - **What to confirm in test mode:**
   - the minimum `manual_expiry_period` the Orders API accepts;

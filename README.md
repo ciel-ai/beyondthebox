@@ -81,7 +81,9 @@ Every account (domain, Vercel, Supabase, Razorpay, Resend, Upstash, Cloudflare, 
 1. **Supabase:** create the project (Pro plan for production), then copy the pooled connection string to `DATABASE_URL` and the direct one to `DIRECT_URL`.
 2. **Vercel:** create the project, set every variable from `.env.example` per environment, and add the domain. Vercel Pro is required for the per-minute cron in `vercel.json`.
 3. **Migrations:** run `npx prisma migrate deploy` with the environment's `DIRECT_URL`, then `npm run db:seed` **once** per database.
-4. **Razorpay (test mode first):** Settings → Webhooks → add `https://<domain>/api/webhooks/razorpay`.
+4. **Razorpay (test mode first):** Settings → Webhooks → add the webhook URL.
+   - **Staging** (Vercel preview, protected by default): `https://<staging host>/api/webhooks/razorpay?x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>`.
+   - **Production:** `https://<production domain>/api/webhooks/razorpay`, with **no** bypass parameter.
    - **Events:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, `refund.failed`.
    - **Secret:** set it as `RAZORPAY_TEST_WEBHOOK_SECRET`.
    - **Capture:** orders are created with **manual capture**, which overrides the dashboard auto-capture setting. The server captures a payment only after seats are secured.
@@ -99,7 +101,7 @@ Steps:
 1. Complete the checklist in the admin (Phase 2).
 2. Complete Razorpay KYC and activation. Razorpay requires the policy and contact pages, which already exist at `/privacy`, `/terms` and `/refund-policy`.
 3. Add `RAZORPAY_LIVE_KEY_ID`, `RAZORPAY_LIVE_KEY_SECRET` and `RAZORPAY_LIVE_WEBHOOK_SECRET` to **Production only** and redeploy.
-4. In the **live** Razorpay dashboard, add the same webhook URL and events, using the live webhook secret.
+4. In the **live** Razorpay dashboard, add the webhook `https://<production domain>/api/webhooks/razorpay` with the same events and the live webhook secret. **Never add `?x-vercel-protection-bypass=…` to the production URL.** That parameter is for the protected staging previews only; production domains aren't behind Vercel protection.
 5. In the admin, switch payments to LIVE. This is refused if any checklist item is missing.
 6. Buy one Standard Pass with a real card or UPI, check the email, PDF ticket and invoice (series `BTL/26-27/…`), then refund it from the admin.
 
