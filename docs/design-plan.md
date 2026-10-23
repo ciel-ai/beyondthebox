@@ -132,3 +132,41 @@ Both fonts load with `next/font/google`. Anton has one weight, so hierarchy come
 - Never pass empty items to FlexCarousel; never leave `captureWheel` on.
 - No WebGL/WebGPU component above the fold, and none without a fallback.
 - No third-party visual components beyond PillNav, FlexCarousel and AeroShards without asking.
+
+---
+
+## Design change: balanced gold accents (approved 23 Oct 2026)
+Target by area: black ≈70%, dark surfaces ≈20%, gold 10–15%.
+
+### New tokens
+| token | value | use | contrast |
+|---|---|---|---|
+| `gold-surface` | #EBC95D | flat gold, full-width sections (ticker ribbon, Awards) | black text 13.05:1; rgba(0,0,0,.72) secondary text 7.18:1 |
+| `warm` | #120F08 | warm near-black, secondary section surface only (Exhibition, Sponsorship) | gold-deep 10.28:1, muted 7.86:1, white 19.13:1 |
+| `gold-line` | rgba(221,187,75,0.28) | gold hairlines on black and warm | decorative |
+
+The gold leaf gradient stays limited to primary buttons, ticket foil, and the closing CTA band.
+
+### Rhythm, top to bottom
+| # | Section | Surface | Gold |
+|---|---|---|---|
+| 1 | Hero | black | CTA, the marquee's "•" separators, nav highlight |
+| 2 | Ticker ribbon (new) | **gold-surface**, 56px (48px mobile) | black Anton text scrolling slowly; static with reduced motion; pauses off screen |
+| 3 | About | black (AeroShards when integrated) | fact values in gold-deep |
+| 4 | Who it's for | warm | **not built**: this site has no audience section and the brief gives no audience names; needs organiser content |
+| 5 | Programme | black | times in gold-deep; 1px gold-line dividers |
+| 6 | Speakers | black | carousel counter (when integrated) and "See all speakers" |
+| 7 | Awards | **gold-surface** | black Anton headline; black category cards with gold-deep titles and #E8E8E8 text; black "Nominate now" button with gold text |
+| 8 | Tickets | black | foil tickets; faint radial gold light behind the cards (≤8% opacity) |
+| 9 | Exhibition, Sponsorship | warm | 1px gold-line card borders; tier names and the large email/phone in gold-deep |
+| 10 | FAQ | black | gold +/− icons; 2px gold-deep left border on the open item |
+| 11 | Closing CTA band (new) | **gold leaf** + subtle film grain | black Anton "Be in the room. 20 December 2026."; black "Book your pass" button with gold text |
+| 12 | Footer | black | 1px gold-deep top border, gold-deep column headings, large flat gold-deep wordmark |
+
+### Rules
+- Never two gold-filled sections next to each other: at least two non-gold sections between them (ticker → Awards: three; Awards → closing band: four).
+- Text on gold is #000 only; secondary text rgba(0,0,0,0.72). Never gold or white text on gold.
+- Focus rings: black (2px) inside gold sections, gold everywhere else. Links in gold sections are black and underlined.
+- The mobile sticky booking bar stays solid black.
+- No gold on body text, paragraphs or photos. Gold is for numbers, headings in gold sections, lines, icons, buttons and states.
+- No new glows, gradients or decorative shapes beyond this list.

@@ -1,4 +1,6 @@
+import { ClosingBand } from "@/components/ClosingBand";
 import { Footer } from "@/components/Footer";
+import { GoldTicker } from "@/components/GoldTicker";
 import { Hero } from "@/components/Hero";
 import { Nav } from "@/components/Nav";
 import { About, Awards, Exhibition, Faq, Programme, Speakers, SponsorLogos, Sponsorship } from "@/components/Sections";
@@ -43,15 +45,17 @@ export default async function Home() {
       <Nav />
       <main id="main">
         <Hero dateLabel={d.event.dateLabel} venue={d.event.venue} />
+        <GoldTicker />
         <About event={d.event} />
-        <Speakers speakers={d.speakers} />
         <Programme agenda={d.agenda} />
+        <Speakers speakers={d.speakers} />
         <Awards awards={d.awards} closesAt={d.event.nominationsCloseAt} />
         <Tickets tiers={d.tiers} pricing={d.pricing} maxPerOrder={d.event.maxTicketsPerOrder} dateLabel={d.event.dateLabel} venue={d.event.venue} />
         <Exhibition packages={d.packages} email={d.event.contactEmail} />
         <Sponsorship email={d.event.contactEmail} phone={d.event.contactPhone} />
         <SponsorLogos sponsors={d.sponsors} />
         <Faq faqs={d.faqs} />
+        <ClosingBand dateLabel={d.event.dateLabel} />
       </main>
       <Footer />
       <StickyBookingBar />

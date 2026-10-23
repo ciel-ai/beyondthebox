@@ -14,6 +14,10 @@
   --color-gold-mid: #efda72;
   --color-gold-highlight: #f9ef8b;
   --color-gold-shadow: #a8872b;
+  /* Balanced gold accents (design change, 23 Oct 2026) */
+  --color-gold-surface: #ebc95d;
+  --color-warm: #120f08;
+  --color-gold-line: rgba(221, 187, 75, 0.28);
 
   --font-display: var(--font-anton), Impact, "Arial Narrow", sans-serif;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -186,6 +190,19 @@
   border: 1px solid var(--color-edge);
   &:hover:not(:disabled) {
     border-color: var(--color-gold-deep);
+  }
+}
+/* Black button with gold text: used on gold surfaces (Awards, closing band). A disabled one keeps
+   full contrast: its label ("Nominations open soon") already says it isn't available. */
+@utility btn-black-gold {
+  background: var(--color-black);
+  color: var(--color-gold-deep);
+  border: 1px solid var(--color-black);
+  &:hover:not([aria-disabled="true"]) {
+    color: var(--color-gold-highlight);
+  }
+  &[aria-disabled="true"] {
+    opacity: 1;
   }
 }
 @utility btn-sm {
@@ -479,6 +496,69 @@ details.faq .faq-v {
 }
 details.faq[open] .faq-v {
   transform: scaleY(0);
+}
+/* Open item: 2px gold-deep left border (space reserved so opening doesn't shift text). */
+details.faq {
+  border-left: 2px solid transparent;
+  padding-left: 16px;
+}
+details.faq[open] {
+  border-left-color: var(--color-gold-deep);
+}
+
+/* Links inside gold sections are black and underlined. */
+.on-gold a:not(.btn) {
+  color: var(--color-black);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Subtle film grain for the closing band (a static texture, not a glow). */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Gold ticker ribbon under the hero: transform-only loop, paused off screen and with reduced motion. */
+@keyframes ticker-left {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker {
+  height: 48px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: var(--color-gold-surface);
+  color: #000;
+}
+@media (min-width: 768px) {
+  .ticker {
+    height: 56px;
+  }
+}
+.ticker__track {
+  display: flex;
+  width: max-content;
+  animation: ticker-left 60s linear infinite;
+}
+.ticker[data-paused] .ticker__track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker__track {
+    animation: none;
+  }
 }
 
 /* Legal pages rendered from Markdown */

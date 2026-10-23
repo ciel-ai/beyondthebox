@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSiteData } from "@/server/content";
-import { InstagramIcon, LinkedInIcon, SocialButton, Wordmark, XIcon, YouTubeIcon, type Social } from "./brand";
+import { InstagramIcon, LinkedInIcon, SocialButton, XIcon, YouTubeIcon, type Social } from "./brand";
 import { NAV_LINKS } from "@/lib/nav";
 
 // [Social URLs]: add the organiser's profiles here (or in the admin from Phase 2).
@@ -14,7 +14,7 @@ const SOCIALS: Social[] = [
 export async function Footer() {
   const { event } = await getSiteData();
   return (
-    <footer id="contact" className="border-t border-hairline bg-black pb-10 pt-24" aria-labelledby="contact-title">
+    <footer id="contact" className="border-t border-gold-deep bg-black pb-10 pt-24" aria-labelledby="contact-title">
       <div className="wrap">
         <div className="grid-12 gap-y-14">
           <div className="col-span-12 lg:col-span-5">
@@ -58,7 +58,7 @@ export async function Footer() {
 
           <nav aria-label="Footer" className="col-span-12 grid grid-cols-2 gap-[var(--gutter)] md:col-span-8 lg:col-span-4 lg:col-start-7">
             <div>
-              <h3 className="ui text-muted">Event</h3>
+              <h3 className="ui text-gold-deep">Event</h3>
               <ul className="mt-4">
                 {NAV_LINKS.slice(0, 4).map((l) => (
                   <li key={l.href}>
@@ -70,7 +70,7 @@ export async function Footer() {
               </ul>
             </div>
             <div>
-              <h3 className="ui text-muted">Tickets</h3>
+              <h3 className="ui text-gold-deep">Tickets</h3>
               <ul className="mt-4">
                 <li>
                   <Link href="/#tickets" className="flex min-h-11 items-center hover:text-gold-deep">Book a pass</Link>
@@ -86,7 +86,7 @@ export async function Footer() {
           </nav>
 
           <div className="col-span-12 md:col-span-4 lg:col-span-2">
-            <Wordmark className="!text-[28px]" />
+            <h3 className="ui text-gold-deep">The conclave</h3>
             <p className="meta mt-4 text-muted">
               {event.subtitle}
               <br />
@@ -95,7 +95,15 @@ export async function Footer() {
           </div>
         </div>
 
-        <div className="mt-20 flex flex-col gap-4 border-t border-hairline pt-6 text-[14px] text-muted md:flex-row md:items-center md:justify-between">
+        {/* Large flat gold wordmark (decorative: the name is in the hero h1). */}
+        {/* Sized by the container (the line is ~7.13em wide in Anton), so it always spans the column exactly. */}
+        <div className="@container mt-20">
+          <p aria-hidden className="display select-none whitespace-nowrap text-[13.8cqi] leading-[0.85] text-gold-deep">
+            Beyond the Limits
+          </p>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-4 border-t border-hairline pt-6 text-[14px] text-muted md:flex-row md:items-center md:justify-between">
           <p>© 2026 [Organiser legal name]</p>
           <ul className="flex flex-wrap gap-x-6">
             <li>

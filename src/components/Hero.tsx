@@ -11,7 +11,20 @@ const ROTATE = [-2, 1.4, -0.8, 2, -1.6, 0.9, -0.4, 1.7];
 const OFFSET = [0, 4.5, -2.5, 3, -4, 2, -1, 3.5];
 const SHADES = ["#141414", "#1a1a1a", "#161616", "#1c1c1c", "#131313", "#191919", "#171717", "#1b1b1b"];
 
-const MARQUEE = "Beyond the Limits • Keynotes • Awards • Networking • Exhibitions • Entertainment • ";
+const MARQUEE_WORDS = ["Beyond the Limits", "Keynotes", "Awards", "Networking", "Exhibitions", "Entertainment"];
+
+/** One copy of the marquee line, with the "•" separators in gold. */
+function MarqueeLine() {
+  return (
+    <span className="pr-[0.25em]">
+      {MARQUEE_WORDS.map((w) => (
+        <span key={w}>
+          {w} <span className="text-gold-deep">•</span>{" "}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 function Frame({ i }: { i: number }) {
   const p = PHOTOS[i % PHOTOS.length]!;
@@ -75,8 +88,8 @@ export function Hero({ dateLabel, venue }: { dateLabel: string; venue: string })
       {/* Marquee: one line of giant type moving right, opposite to the strip. */}
       <div aria-hidden className="hero__marquee hero-enter hero-enter--late" data-testid="hero-marquee">
         <div className="loop-right display flex w-max whitespace-nowrap">
-          <span className="pr-[0.25em]">{MARQUEE}</span>
-          <span className="pr-[0.25em]">{MARQUEE}</span>
+          <MarqueeLine />
+          <MarqueeLine />
         </div>
       </div>
 

@@ -202,7 +202,13 @@ export function Tickets({
   const price = tier ? computePrice(tier.pricePaise, qty[tier.code]!, pricing) : null;
 
   return (
-    <section id="tickets" className="section-y border-t border-hairline" aria-labelledby="tickets-title">
+    <section
+      id="tickets"
+      className="section-y border-t border-hairline"
+      // The one permitted light: a very faint radial gold behind the cards (≤ 8% opacity).
+      style={{ background: "radial-gradient(ellipse 70% 45% at 50% 62%, rgba(221,187,75,0.08), rgba(221,187,75,0) 70%), #000" }}
+      aria-labelledby="tickets-title"
+    >
       <div className="wrap">
         <div className="grid-12 gap-y-4">
           <h2 id="tickets-title" className="display display-l col-span-12 lg:col-span-8">

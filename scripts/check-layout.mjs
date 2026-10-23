@@ -29,14 +29,20 @@ for (const [w, h] of VIEWPORTS) {
         })
         .map((e) => `${e.tagName}:${(e.textContent || e.getAttribute("aria-label") || e.name || "").trim().slice(0, 24)} ${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`),
       tinyInputs: [...document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea")].filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).map((e) => e.name),
+      // Display type (incl. decorative aria-hidden text) must fit its box; the scrolling marquee
+      // and ticker are meant to run off screen and are exempt.
+      displayOverflow: [...document.querySelectorAll(".display")]
+        .filter((e) => !e.closest(".hero__marquee, .ticker, [role=list], [role=region], .sr-only"))
+        .filter((e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().right > e.getBoundingClientRect().right + 1; })
+        .map((e) => e.textContent.trim().slice(0, 30)),
       overflow: document.documentElement.scrollWidth - innerWidth,
       clipped: [...document.querySelectorAll("h1,h2,h3,p,a,button,li,dd,dt,label")]
         .filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).display !== "inline" && !e.closest("[aria-hidden=true],.sr-only,[role=list],[role=region]"))
         .map((e) => `${e.tagName}:${e.textContent.trim().slice(0, 40)}`),
     }));
-    const ok = r.overflow <= 0 && r.clipped.length === 0 && r.small.length === 0 && r.tinyInputs.length === 0;
+    const ok = r.overflow <= 0 && r.clipped.length === 0 && r.small.length === 0 && r.tinyInputs.length === 0 && r.displayOverflow.length === 0;
     if (!ok) failures++;
-    console.log(`${ok ? "PASS" : "FAIL"} ${w}x${h} ${path}${r.overflow > 0 ? ` overflow=${r.overflow}px` : ""}${r.clipped.length ? ` clipped=${r.clipped.slice(0, 3).join(" | ")}` : ""}${r.small.length ? ` small-targets=${r.small.slice(0, 4).join(" | ")}` : ""}${r.tinyInputs.length ? ` inputs<16px=${r.tinyInputs.join(",")}` : ""}`);
+    console.log(`${ok ? "PASS" : "FAIL"} ${w}x${h} ${path}${r.overflow > 0 ? ` overflow=${r.overflow}px` : ""}${r.clipped.length ? ` clipped=${r.clipped.slice(0, 3).join(" | ")}` : ""}${r.small.length ? ` small-targets=${r.small.slice(0, 4).join(" | ")}` : ""}${r.tinyInputs.length ? ` inputs<16px=${r.tinyInputs.join(",")}` : ""}${r.displayOverflow.length ? ` display-overflow=${r.displayOverflow.join(" | ")}` : ""}`);
   }
   await page.close();
 }

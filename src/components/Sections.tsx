@@ -29,7 +29,7 @@ export function About({ event }: { event: SiteData["event"] }) {
             ].map(([k, v], i) => (
               <div key={k} className={`py-6 sm:pr-6 ${i > 0 ? "border-t border-hairline sm:border-l sm:border-t-0 sm:pl-6 lg:border-l-0 lg:border-t lg:pl-0 xl:border-l xl:border-t-0 xl:pl-6" : ""}`}>
                 <dt className="meta text-muted">{k}</dt>
-                <dd className="display tnum mt-2 text-[clamp(1.75rem,2.3vw,2.125rem)]">{v}</dd>
+                <dd className="display tnum mt-2 text-[clamp(1.75rem,2.3vw,2.125rem)] text-gold-deep">{v}</dd>
               </div>
             ))}
           </dl>
@@ -88,9 +88,9 @@ export function Programme({ agenda }: { agenda: SiteData["agenda"] }) {
         <h2 id="programme-title" className="display display-l">
           Programme
         </h2>
-        <ul className="mt-14 border-t border-hairline">
+        <ul className="mt-14 border-t border-gold-line">
           {FORMATS.map((f) => (
-            <li key={f.name} className="grid-12 items-baseline gap-y-2 border-b border-hairline py-7">
+            <li key={f.name} className="grid-12 items-baseline gap-y-2 border-b border-gold-line py-7">
               <h3 className="display col-span-12 text-[clamp(2rem,4vw,3.25rem)] md:col-span-7">{f.name}</h3>
               <p className="col-span-12 text-muted md:col-span-5">{f.text}</p>
             </li>
@@ -102,11 +102,11 @@ export function Programme({ agenda }: { agenda: SiteData["agenda"] }) {
             <h3 className="display text-[40px]">The day</h3>
             <p className="meta mt-3 text-muted">Timings to be announced.</p>
           </div>
-          <ol className="col-span-12 border-l border-hairline lg:col-span-8">
+          <ol className="col-span-12 border-l border-gold-line lg:col-span-8">
             {agenda.map((a) => (
               <li key={a.id} className="relative grid grid-cols-[96px_1fr] gap-6 py-5 pl-8">
                 <span className="absolute -left-[5px] top-[30px] h-[9px] w-[9px] rounded-full bg-gold-deep" aria-hidden />
-                <span className="tnum meta text-muted">{a.time}</span>
+                <span className="tnum meta text-gold-deep">{a.time}</span>
                 <span className="text-[18px]">{a.title}</span>
               </li>
             ))}
@@ -117,40 +117,41 @@ export function Programme({ agenda }: { agenda: SiteData["agenda"] }) {
   );
 }
 
-/* ---------- Awards ---------- */
+/* ---------- Awards: full gold section ---------- */
 
 export function Awards({ awards, closesAt }: { awards: SiteData["awards"]; closesAt: Date | null }) {
   const open = closesAt ? closesAt > new Date() : false;
   return (
-    <section id="awards" className="section-y border-t border-hairline" aria-labelledby="awards-title">
+    // on-gold: focus rings turn black inside this section. Text on gold is black only.
+    <section id="awards" className="on-gold section-y bg-gold-surface text-black" aria-labelledby="awards-title">
       <div className="wrap grid-12 gap-y-12">
         <div className="col-span-12 lg:col-span-5">
-          <h2 id="awards-title" className="display display-l">
+          <h2 id="awards-title" className="display display-l text-black">
             Industry recognition awards
           </h2>
-          <p className="mt-6 text-muted">
+          <p className="mt-6 text-black/72">
             {closesAt
               ? `Nominations close ${closesAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" })}.`
               : "Nomination dates to be announced."}
           </p>
           <div className="mt-8">
             {open ? (
-              <Link href="/awards/nominate" className="btn btn-leaf">
+              <Link href="/awards/nominate" className="btn btn-black-gold">
                 Nominate now
               </Link>
             ) : (
-              <span className="btn btn-dark" aria-disabled="true">
+              <span className="btn btn-black-gold cursor-not-allowed" aria-disabled="true">
                 Nominations open soon
               </span>
             )}
           </div>
         </div>
-        <ul className="col-span-12 border-t border-hairline lg:col-span-6 lg:col-start-7">
+        <ul className="col-span-12 grid gap-3 lg:col-span-7">
           {awards.map((a) => (
-            <li key={a.id} className="border-b border-hairline py-6">
-              <h3 className="text-[20px] font-semibold">{a.name}</h3>
-              {a.description && <p className="mt-1 text-muted">{a.description}</p>}
-              {a.eligibility && <p className="meta mt-2 text-muted">Eligibility: {a.eligibility}</p>}
+            <li key={a.id} className="rounded-sm bg-black p-6 md:p-7">
+              <h3 className="display text-[26px] text-gold-deep">{a.name}</h3>
+              {a.description && <p className="mt-2 text-[#E8E8E8]">{a.description}</p>}
+              {a.eligibility && <p className="meta mt-3 text-[#E8E8E8]">Eligibility: {a.eligibility}</p>}
             </li>
           ))}
         </ul>
@@ -163,7 +164,7 @@ export function Awards({ awards, closesAt }: { awards: SiteData["awards"]; close
 
 export function Exhibition({ packages, email }: { packages: SiteData["packages"]; email: string | null }) {
   return (
-    <section id="exhibition" className="section-y border-t border-hairline" aria-labelledby="exhibition-title">
+    <section id="exhibition" className="section-y bg-warm" aria-labelledby="exhibition-title">
       <div className="wrap">
         <div className="grid-12 gap-y-6">
           <h2 id="exhibition-title" className="display display-l col-span-12 lg:col-span-8">
@@ -181,9 +182,9 @@ export function Exhibition({ packages, email }: { packages: SiteData["packages"]
             )}
           </div>
         </div>
-        <ul className="mt-14 grid gap-px border border-hairline bg-hairline md:grid-cols-3">
+        <ul className="mt-14 grid gap-4 md:grid-cols-3">
           {packages.map((p) => (
-            <li key={p.id} className="bg-black p-8">
+            <li key={p.id} className="rounded-sm border border-gold-line p-8">
               <h3 className="display text-[32px]">{p.name}</h3>
               <p className="mt-3 text-muted">{p.description}</p>
               {p.priceNote && <p className="meta mt-6">{p.priceNote}</p>}
@@ -202,17 +203,17 @@ const SPONSOR_TIERS = ["[Title sponsor]", "[Platinum sponsor]", "[Gold sponsor]"
 export function Sponsorship({ email, phone }: { email: string | null; phone: string | null }) {
   const subject = encodeURIComponent("Sponsorship enquiry: Beyond the Limits 2026");
   return (
-    <section id="sponsors" className="section-y border-t border-hairline" aria-labelledby="sponsorship-title">
+    <section id="sponsors" className="section-y border-t border-gold-line bg-warm" aria-labelledby="sponsorship-title">
       <div className="wrap grid-12 gap-y-14">
         <div className="col-span-12 lg:col-span-6">
           <h2 id="sponsorship-title" className="display display-l">
             Become a sponsor
           </h2>
           <p className="measure mt-6 text-muted">[One paragraph on the audience and what sponsors get. To be supplied by the organiser.]</p>
-          <ul className="mt-10 border-t border-hairline">
+          <ul className="mt-10 border-t border-gold-line">
             {SPONSOR_TIERS.map((t) => (
-              <li key={t} className="flex items-baseline justify-between gap-6 border-b border-hairline py-5">
-                <span className="text-[20px] font-semibold">{t}</span>
+              <li key={t} className="flex items-baseline justify-between gap-6 border-b border-gold-line py-5">
+                <span className="text-[20px] font-semibold text-gold-deep">{t}</span>
                 <span className="meta text-muted">[Benefits]</span>
               </li>
             ))}
@@ -291,7 +292,7 @@ export function Faq({ faqs }: { faqs: SiteData["faqs"] }) {
             <details key={f.id} className="faq border-b border-hairline">
               <summary className="flex min-h-11 items-center justify-between gap-6 py-6 text-[clamp(1.125rem,1.6vw,1.375rem)] font-semibold">
                 {f.question}
-                <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} className="shrink-0" aria-hidden>
+                <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} className="shrink-0 text-gold-deep" aria-hidden>
                   <path d="M1 8h14" />
                   <path className="faq-v" d="M8 1v14" />
                 </svg>

@@ -26,8 +26,8 @@ export function StickyBookingBar() {
   const show = !heroCtaVisible && !ticketsVisible && !footerVisible;
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-black/95 px-[var(--gutter)] pt-3 transition-transform duration-200 md:hidden ${
-        show ? "translate-y-0" : "pointer-events-none translate-y-full"
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-black px-[var(--gutter)] pt-3 transition-[transform,visibility] duration-200 md:hidden ${
+        show ? "visible translate-y-0" : "pointer-events-none invisible translate-y-full"
       }`}
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       aria-hidden={!show}

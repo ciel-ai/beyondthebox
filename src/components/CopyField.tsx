@@ -23,7 +23,7 @@ export function CopyField({ label, value, href, placeholder }: { label: string; 
   };
 
   return (
-    <div className="border-b border-hairline py-6">
+    <div className="border-b border-gold-line py-6">
       <div className="flex items-center justify-between gap-4">
         <p className="meta text-muted">{label}</p>
         <button
@@ -44,11 +44,11 @@ export function CopyField({ label, value, href, placeholder }: { label: string; 
       </div>
       <p className="mt-2 break-words text-[clamp(1.5rem,2.6vw,2.25rem)] font-semibold leading-tight">
         {value && href ? (
-          <a href={href} className="hover:text-gold-deep">
+          <a href={href} className="text-gold-deep hover:text-gold">
             {value}
           </a>
         ) : (
-          <span className="text-muted">{placeholder}</span>
+          <span className="text-gold-deep">{placeholder}</span>
         )}
       </p>
       <span className="sr-only" aria-live="polite">
