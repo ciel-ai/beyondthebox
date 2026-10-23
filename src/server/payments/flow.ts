@@ -349,6 +349,27 @@ export async function runCapture(paymentRowId: string) {
   return "confirmed";
 }
 
+/**
+ * A CAPTURE job ran out of retries. The payment's real state decides: captured → confirm;
+ * anything else → release the seats (an uncaptured authorisation lapses back to the buyer).
+ */
+export async function reconcileCapture(paymentRowId: string) {
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: paymentRowId }, include: { booking: true } });
+  if (payment.decision !== "CAPTURE" || payment.status === "CAPTURED") return "nothing_to_do";
+  let remoteStatus = "unknown";
+  try {
+    remoteStatus = (await getProvider(payment.booking.paymentsMode).fetchPayment(payment.providerPaymentId)).status;
+  } catch {
+    // Gateway unreachable: release anyway; we never capture without a working gateway call.
+  }
+  if (remoteStatus === "captured") {
+    await confirmBooking({ paymentId: payment.providerPaymentId, orderId: payment.providerOrderId });
+    return "confirmed";
+  }
+  await returnSeats(payment.id, `capture_retries_exhausted_${remoteStatus}`);
+  return "released";
+}
+
 /** Capture became impossible after seats were secured: give the seats back. */
 async function returnSeats(paymentRowId: string, reason: string) {
   await transaction(async (tx) => {
@@ -363,10 +384,15 @@ async function returnSeats(paymentRowId: string, reason: string) {
     if (booking.status === "PENDING") {
       await tx.booking.update({ where: { id: booking.id }, data: { status: "FAILED", failedAt: now } });
     }
-    await enqueue(tx, { kind: "EMAIL", template: "payment_failed", bookingId: booking.id, paymentId: payment.id }, `email:failed:${payment.id}`);
+    // No tickets or invoice exist yet: they are only created after a successful capture.
+    await enqueue(tx, { kind: "EMAIL", template: "payment_not_taken", bookingId: booking.id, paymentId: payment.id }, `email:capture-failed:${payment.id}`);
     await enqueue(
       tx,
-      { kind: "ADMIN_ALERT", subject: `Capture failed: ${booking.reference}`, lines: [`Payment ${payment.providerPaymentId}`, `Reason: ${reason}`, "Seats returned to inventory."] },
+      {
+        kind: "ADMIN_ALERT",
+        subject: `Capture failed: ${booking.reference}`,
+        lines: [`Booking ${booking.reference}`, `Payment ${payment.providerPaymentId}`, `Reason: ${reason}`, "Seats released, booking marked FAILED, buyer emailed. No tickets or invoice were issued."],
+      },
       `alert:capture-failed:${payment.id}`,
     );
   });

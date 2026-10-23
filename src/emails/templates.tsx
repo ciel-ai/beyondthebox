@@ -47,14 +47,19 @@ export function PaymentNotTaken({ b, amount, reason, windowMins }: { b: BookingS
   const why =
     reason === "duplicate_payment"
       ? "this booking had already been paid for"
-      : "the seats on your booking were released before the payment reached us, and that pass has since sold out";
+      : reason.startsWith("capture_")
+        ? "we couldn't complete the payment in time, so your booking was not confirmed"
+        : "the seats on your booking were released before the payment reached us, and that pass has since sold out";
   return (
     <Layout preview={`We didn't take your payment of ${amount}.`}>
       <H1>We didn&apos;t take your payment</H1>
       <P>
         We received a payment authorisation of {amount} for booking {b.reference}, but we didn&apos;t take it because {why}. You have not been charged.
       </P>
-      <P>Razorpay releases the authorisation automatically within about {Math.ceil(windowMins / 60)} hour(s). Depending on your bank, the hold can take a few working days to disappear from your statement.</P>
+      <P>
+        If your bank held or debited the amount, Razorpay returns it automatically (the hold is released within about {Math.ceil(windowMins / 60)} hour(s) of
+        the payment; a debit can take 5–7 working days to show back in your account). You can book again while seats are available.
+      </P>
     </Layout>
   );
 }

@@ -4,11 +4,22 @@
 ### 1. Stack and environments
 - Next.js 16 (current stable; fall back to 15 only if a key dependency blocks), TypeScript strict, Tailwind v4, Framer Motion, Prisma 7.10 (stable; npm's `latest` tag currently points to an 8.0 release candidate, which we avoid).
 - PostgreSQL + Prisma on **Supabase** (approved): Postgres, a private Storage bucket (nomination files, signed URLs), and Auth with **TOTP 2FA required for every admin** (session must be AAL2).
-- **Running costs (to verify at sign-up; prices from supabase.com/pricing and vercel.com/pricing):**
-  - **Supabase Pro:** $25/month per organisation, with $10 compute credit covering one Micro instance. Includes daily backups kept 7 days, and paid projects are never paused. A second project for staging adds its own compute (a Micro instance is roughly covered by the credit once; budget about $10/month extra).
-  - **Point-in-time recovery:** optional, **$100/month per 7 days of retention**. Recommended only for the sales window (e.g. Nov–Dec 2026).
-  - **Vercel Pro:** about $20/month per member. Needed anyway because Hobby prohibits commercial use and restricts cron frequency; we need a per-minute cron for the job worker.
-  - **Others:** Resend, Upstash, Sentry and Turnstile have free tiers that should cover a 1,000-attendee event; Razorpay charges per transaction.
+- **Running costs** (checked October 2026 on supabase.com/pricing, vercel.com/pricing and Vercel's cron docs; confirm at sign-up):
+
+  | Service | Plan | Price | Why this plan |
+  |---|---|---|---|
+  | Vercel | **Pro** | $20/month per developer seat (includes $20 usage credit; viewer seats free). Budget 1–2 seats: $20–40 | Hobby is "for personal, non-commercial use" and limits cron jobs to once a day; the job worker needs a per-minute cron |
+  | Supabase (production) | **Pro** | $25/month, includes $10 compute credit (one Micro instance), daily backups kept 7 days, never paused | Paid projects aren't paused for inactivity; backups |
+  | Supabase (staging) | second project in the same org | ≈$10/month compute | Staging must not share a database with production |
+  | Supabase PITR | add-on, optional | $100/month per 7 days of retention | Only worth it during the sales window |
+  | Razorpay | Standard | per-transaction fee per the organiser's Razorpay agreement; no monthly fee | — |
+  | Resend | Free tier | $0 at launch volumes (confirm limits at sign-up) | Upgrade if monthly email volume exceeds the free tier |
+  | Upstash Redis | Free tier | $0 at this traffic | Rate limiting only |
+  | Cloudflare Turnstile | Free | $0 | — |
+  | Sentry (Phase 4) | Developer (free) | $0 | — |
+  | Vercel Password Protection | not used | ($20/month per project if ever enabled) | Staging uses the free Vercel Authentication plus an automation bypass instead |
+
+  **Fixed monthly total: about $55–75** (Vercel $20–40 + Supabase $25 + staging ≈$10), plus Razorpay fees and the optional PITR.
 - Razorpay (behind a `PaymentProvider` interface), Resend + React Email, `qrcode`, `@react-pdf/renderer`, Zod, Turnstile, Upstash Ratelimit, Sentry, Vercel.
 - **Environments:**
   - **Local:** Docker Postgres. Payments use a fake provider with real HMAC.
@@ -277,3 +288,44 @@ After that, an end-to-end run with Razorpay **test mode** on staging (test cards
   - the sponsorship and exhibition buttons open email until the Phase 3 forms exist
   - "Nominate now" shows "Nominations open soon" until dates are set
   - social links and contact details show bracketed placeholders until set
+
+
+### 15. Capture job: confirmed order of operations (approved addition, 23 Oct 2026)
+The order is exactly:
+1. **One transaction:** seats allocated (`soldCount += qty`, hold converted) and `CAPTURE` job saved. No tickets, no invoice and no email exist at this point.
+2. **Capture call** (worker, outside any transaction).
+3. **Only after a successful capture**, one transaction (`confirmBooking`): booking CONFIRMED, tickets issued, invoice number allocated, confirmation email job queued.
+
+If the capture fails, or Razorpay already auto-refunded the authorisation because the job ran past the 60-minute window:
+- the seats are released and the booking is marked FAILED;
+- no tickets and no invoice are issued;
+- the buyer is emailed ("we couldn't complete your payment, so we didn't take it");
+- admins get an alert.
+
+Two safeguards close the remaining gaps:
+- **Retries exhausted:** a capture job that exhausts its retries (8 attempts, about 45 minutes) is reconciled. The worker fetches the payment: captured → confirm; anything else → release seats as above.
+- **Stuck jobs:** any capture job still pending 10 minutes after it was created raises one admin alert (de-duplicated per job). This check runs on every worker pass (per-minute cron).
+
+Tests cover the failure path, the lapsed path, exhausted retries and the 10-minute alert.
+
+### 16. Change request 1: vendor components, hero fit, mobile (23 Oct 2026)
+- **Vendor code:** PillNav, FlexCarousel and AeroShards go in `src/components/vendor/reactbits/`, copied unedited with their CSS. Customisation lives in our wrappers plus `src/styles/vendor-overrides.css`, where every rule is scoped under our wrapper class (`.site-header`, `.speakers-carousel`, `.about-shards`). Patches, licences and package checks are recorded in `docs/VENDOR_NOTES.md`.
+- **Dependencies:** pinned exactly (no ^ or ~): `ogl` (FlexCarousel) and `vgpu` (AeroShards).
+- **Loading:** FlexCarousel and AeroShards load through `next/dynamic({ ssr: false })`, mounted only when their section is within 300px of the viewport (IntersectionObserver). Neither `ogl` nor `vgpu` may appear in the initial JS; verified by the bundle analyser before sign-off.
+- **AeroShards gating:** no mount when any of these is true: no `navigator.gpu`, reduced motion, Save-Data, `deviceMemory ≤ 4` or `hardwareConcurrency ≤ 4`, or a narrow screen failing the capability check. It unmounts on `onError`, or if the average frame time over the first 120 frames exceeds 22ms. The still WebP frame is always underneath.
+- **FlexCarousel gating:** the server-rendered HTML row is the initial HTML. The swap happens only with WebGL2, at a fixed container height (no CLS). Items are never empty (TBA padding to 6, built from the database). Images are same-origin, because the component loads them with `crossOrigin="anonymous"`. `captureWheel={false}`.
+- **Scroll-spy:** `useActiveSection()` → `/#id` on the home page (rootMargin `-45% 0px -50% 0px`, undefined in the hero) and a pathname map elsewhere.
+- **Tests and budgets:**
+  - **Playwright** (system Chrome) at the 12 viewports asserts the hero fit: bottom edge = viewport height (±1px) at heights ≥600px; CTA bottom ≥12px above the fold; marquee not clipped; no sideways scroll. Each run saves screenshots.
+  - **Lighthouse mobile budgets** (home page): Performance ≥85, LCP ≤2.5s, CLS ≤0.05, TBT ≤200ms. A second run uses 4× CPU throttling (DevTools method).
+
+### 17. Staging and the real-Razorpay test
+- **Staging** is a Vercel preview deployment of the `staging` branch, with its own Supabase project, Upstash database, Resend key and `ADMIN_ALERT_EMAIL` (env validation requires them outside local).
+- **Webhooks:** preview deployments are behind Vercel's Standard Protection by default, which would reject Razorpay's webhooks. Razorpay can't send custom headers, so the webhook URL carries Vercel's automation bypass as a query parameter (documented by Vercel for exactly this case):
+  `https://<staging host>/api/webhooks/razorpay?x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>`
+- **Events to tick:** `payment.authorized`, `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, `refund.failed`.
+- **What to confirm in test mode:**
+  - the minimum `manual_expiry_period` the Orders API accepts;
+  - the `refund_speed` values it accepts (`normal`, `optimum`);
+  - the order of webhook events under manual capture;
+  - mobile Checkout, including the UPI app hand-off.

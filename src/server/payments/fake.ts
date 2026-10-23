@@ -15,16 +15,24 @@ export const FAKE_WEBHOOK_SECRET = "fake_webhook_secret_for_tests_only";
 type FakeOrder = { id: string; amount: number; status: "created" | "attempted" | "paid" };
 type FakePayment = NormalizedPayment & { refunded: number };
 
-type Store = { orders: Map<string, FakeOrder>; payments: Map<string, FakePayment>; captureCalls: number; refundCalls: number };
+type Store = {
+  orders: Map<string, FakeOrder>;
+  payments: Map<string, FakePayment>;
+  captureCalls: number;
+  refundCalls: number;
+  /** Simulates a gateway outage on capture (payment stays authorised). */
+  failCaptures: boolean;
+};
 
 const g = globalThis as unknown as { __fakeGateway?: Store };
-export const fakeStore: Store = (g.__fakeGateway ??= { orders: new Map(), payments: new Map(), captureCalls: 0, refundCalls: 0 });
+export const fakeStore: Store = (g.__fakeGateway ??= { orders: new Map(), payments: new Map(), captureCalls: 0, refundCalls: 0, failCaptures: false });
 
 export function resetFakeGateway() {
   fakeStore.orders.clear();
   fakeStore.payments.clear();
   fakeStore.captureCalls = 0;
   fakeStore.refundCalls = 0;
+  fakeStore.failCaptures = false;
 }
 
 const id = (prefix: string) => `${prefix}_FAKE${randomToken(9).replace(/[-_]/g, "x")}`;
@@ -132,6 +140,7 @@ export const fakeProvider: PaymentProvider = {
 
   async capture(paymentId, amountPaise) {
     fakeStore.captureCalls++;
+    if (fakeStore.failCaptures) throw new ProviderError("Gateway timeout", 504);
     const p = fakeStore.payments.get(paymentId);
     if (!p) throw new ProviderError("The id provided does not exist", 400);
     if (p.status !== "authorized") throw new ProviderError("The payment has already been either captured or voided.", 400);

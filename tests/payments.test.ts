@@ -231,3 +231,81 @@ describe("invoices", () => {
     expect(seqs).toEqual([1, 2, 3, 4]);
   });
 });
+
+describe("capture job: order of operations and failures", () => {
+  const due = () => db.$executeRaw`UPDATE "Job" SET "runAt" = now() WHERE "doneAt" IS NULL AND "failedAt" IS NULL`;
+  const docs = async (bookingId: string) => ({
+    tickets: await db.ticket.count({ where: { bookingId } }),
+    invoices: await db.invoice.count({ where: { bookingId } }),
+    confirmEmails: await db.job.count({ where: { dedupeKey: `email:confirmed:${bookingId}` } }),
+  });
+
+  it("seats + capture job first; tickets, invoice and email only after the capture succeeds", async () => {
+    const { booking, callback } = await bookAndAuthorize("STANDARD", 2);
+    await verify(callback);
+    // Step 1 committed: seats taken, capture job saved, nothing else.
+    expect((await tierState("STANDARD")).soldCount).toBe(2);
+    expect(await db.job.count({ where: { kind: "CAPTURE", doneAt: null } })).toBe(1);
+    expect(await docs(booking.id)).toEqual({ tickets: 0, invoices: 0, confirmEmails: 0 });
+    // A failing capture leaves no documents behind.
+    fakeStore.failCaptures = true;
+    await drainJobs();
+    expect(await docs(booking.id)).toEqual({ tickets: 0, invoices: 0, confirmEmails: 0 });
+    // Capture succeeds on retry → only now are documents created.
+    fakeStore.failCaptures = false;
+    await due();
+    await drainJobs();
+    expect(await docs(booking.id)).toEqual({ tickets: 2, invoices: 1, confirmEmails: 1 });
+  });
+
+  const expectReleased = async (bookingId: string, tier: "STANDARD" | "PREMIUM" | "VIP") => {
+    expect((await tierState(tier)).soldCount).toBe(0);
+    expect((await db.booking.findUniqueOrThrow({ where: { id: bookingId } })).status).toBe("FAILED");
+    expect(await docs(bookingId)).toEqual({ tickets: 0, invoices: 0, confirmEmails: 0 });
+    expect(sentMail.some((m) => m.tag === "payment_not_taken")).toBe(true);
+    expect(sentMail.some((m) => m.tag === "admin_alert" && m.subject.includes("Capture failed"))).toBe(true);
+  };
+
+  it("capture fails (payment declined/voided at the gateway) → seats released, FAILED, buyer and admins told", async () => {
+    const { booking, callback } = await bookAndAuthorize("VIP", 2);
+    await verify(callback);
+    fakeStore.payments.get(callback.razorpay_payment_id)!.status = "failed";
+    await drainJobs();
+    await expectReleased(booking.id, "VIP");
+  });
+
+  it("job ran past the 60-minute window (Razorpay already auto-refunded) → same outcome", async () => {
+    const { booking, callback } = await bookAndAuthorize("PREMIUM", 1);
+    await verify(callback);
+    fakeLapse(callback.razorpay_payment_id); // authorised payment auto-refunded by the gateway
+    await drainJobs();
+    await expectReleased(booking.id, "PREMIUM");
+    expect(fakeStore.payments.get(callback.razorpay_payment_id)!.status).toBe("refunded");
+  });
+
+  it("transient errors until retries run out → reconciled and released, never left holding seats", async () => {
+    const { booking, callback } = await bookAndAuthorize("STANDARD", 1);
+    await verify(callback);
+    fakeStore.failCaptures = true;
+    for (let i = 0; i < 8; i++) {
+      await due();
+      await drainJobs();
+    }
+    expect(await db.job.count({ where: { kind: "CAPTURE", failedAt: { not: null } } })).toBe(1);
+    await drainJobs(); // send the alerts queued by the reconciliation
+    await expectReleased(booking.id, "STANDARD");
+    expect(sentMail.some((m) => m.subject.includes("Job failed after 8 attempts"))).toBe(true);
+  });
+
+  it("alerts admins once when a capture job has been pending for more than 10 minutes", async () => {
+    const { callback } = await bookAndAuthorize("STANDARD", 1);
+    await verify(callback);
+    fakeStore.failCaptures = true;
+    await drainJobs(); // first attempt fails; job pending with backoff
+    await db.$executeRaw`UPDATE "Job" SET "createdAt" = now() - interval '11 minutes' WHERE kind = 'CAPTURE'`;
+    await drainJobs();
+    await drainJobs(); // a second worker pass must not alert again
+    const alerts = sentMail.filter((m) => m.subject.includes("Capture pending over 10 minutes"));
+    expect(alerts).toHaveLength(1);
+  });
+});

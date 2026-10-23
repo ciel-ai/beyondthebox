@@ -93,3 +93,42 @@ Both fonts load with `next/font/google`. Anton has one weight, so hierarchy come
 | No emoji, lorem, fake stats or logos | "1,000 attendees" is a stated fact | Used. Everything else unknown stays bracketed. The sponsor logos section stays hidden until real logos exist. |
 | Primary button overuse | The leaf gradient on every primary would cheapen gold | At most one leaf button per viewport. Secondary actions use the dark outline. |
 | `#333` border | Fails 3:1 as a UI boundary | Acceptable because the button is identified by its label; the hover and focus states turn gold. Noted, not changed. |
+
+---
+
+## Change request 1 (approved 23 Oct 2026): React Bits components, hero fit, mobile
+
+### Navigation: PillNav (React Bits)
+- Fixed transparent header, `padding-top: env(safe-area-inset-top)`, 76px tall row. Left: PillNav in a `flex:1; min-width:0` wrapper (its collapse logic measures that width). Right (≥768px): the gold leaf "Book tickets" button, 52px, matching PillNav `size="lg"`.
+- Logo bubble: a 26px placeholder monogram (gold "B" in Anton), to be replaced by the organiser's mark. The full name lives in the hero h1 and the marquee.
+- Glass bar (`rgba(12,12,12,0.72)`), plain items, fill hover, gold dot indicator driven by scroll-spy. Typography override: Manrope 600, uppercase, 0.08em (applied to `.pill-nav__item`, `.pill-nav__ink-item` and `.pill-nav__row`).
+- Below 768px: the header CTA is hidden; a sticky bottom "Book your pass" bar replaces it.
+- Intro order: nav at 0ms, hero entrance at 150ms.
+
+### About: AeroShards background (React Bits, WebGPU)
+- Full-bleed background behind the About section, gold chrome (or glass, whichever reads more premium in screenshots). Shards flow down the right half on desktop; text sits on the left over a black scrim. On mobile, a vertical scrim sits behind the text.
+- Always rendered over a still WebP frame (≤150 KB). The live effect mounts only on capable devices and unmounts on error or slow frames.
+
+### Speakers: FlexCarousel (React Bits, WebGL2)
+- Replaces the drag row on the home page (the /speakers grid is unchanged). Preset `arch`, portrait cards, gold count, Anton title captions.
+- The server-rendered HTML scroll-snap row stays as the initial HTML and the fallback; the carousel swaps in only with WebGL2, at the same height (no layout shift).
+- Below the carousel: an active-speaker panel (44px social buttons + "View profile", or "Announcing soon" for TBA) and the "See all speakers" button.
+- The frosted 170px drag cursor stays; its label reads "• Drag •", "• View •" or "• Close •" from the carousel's `data-hover` state.
+- TBA images: 3:4, 1080px tall, black with a soft gold silhouette, no text.
+
+### Hero fits the screen
+- `height: 100svh` (auto with `min-height: 100svh` below 520px tall). Grid rows: header space · strip (takes the remaining space) · marquee · meta + CTA.
+- Photo height `min(clamp(150px, 36svh, 440px), 100% of row)`, width by 3:4. Tilt -3° on desktop, -4° on mobile, with the tilt's extra height reserved inside the row.
+- Marquee `min(9.5vw, 13svh, 200px)` on desktop and `min(18vw, 12svh)` on mobile, line-height 0.9, never clipped vertically.
+- Short landscape screens put the meta line and CTA side by side so the button stays on screen.
+- Loops pause off-screen and with reduced motion.
+
+### Mobile
+- Test viewports: 360×800, 375×667, 390×844, 430×932, 844×390, 768×1024, 1024×768, 1280×720, 1366×768, 1440×900, 1920×1080, 2560×1440.
+- `overflow-x: clip` on html and body. Touch targets ≥44px. Inputs ≥16px. Sticky booking bar below 768px.
+
+### Updated "Do not" rules
+- Glass only on PillNav and the drag cursor. Bloom only inside AeroShards, at glow ≤0.15.
+- Never pass empty items to FlexCarousel; never leave `captureWheel` on.
+- No WebGL/WebGPU component above the fold, and none without a fallback.
+- No third-party visual components beyond PillNav, FlexCarousel and AeroShards without asking.
