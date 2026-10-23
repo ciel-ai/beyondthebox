@@ -93,7 +93,7 @@ export function CheckoutForm({
             <div className="md:col-span-2">
               <Field label="Full name" name="buyer.name" autoComplete="name" value={buyer.name} onChange={(v) => setBuyer({ ...buyer, name: v })} error={e("buyer.name")} />
             </div>
-            <Field label="Email" name="buyer.email" type="email" autoComplete="email" value={buyer.email} onChange={(v) => setBuyer({ ...buyer, email: v })} error={e("buyer.email")} />
+            <Field label="Email" name="buyer.email" type="email" inputMode="email" autoComplete="email" value={buyer.email} onChange={(v) => setBuyer({ ...buyer, email: v })} error={e("buyer.email")} />
             <Field label="Mobile number" name="buyer.phone" type="tel" inputMode="tel" autoComplete="tel" hint="10 digits, or with country code" value={buyer.phone} onChange={(v) => setBuyer({ ...buyer, phone: v })} error={e("buyer.phone")} />
           </div>
 
@@ -104,7 +104,7 @@ export function CheckoutForm({
           {business && (
             <div className="mt-4 grid gap-5 md:grid-cols-2">
               <Field label="Company name" name="buyer.company" autoComplete="organization" value={company} onChange={setCompany} error={e("buyer.company")} />
-              <Field label="GSTIN" name="buyer.gstin" hint="15 characters, e.g. 29ABCDE1234F1Z5" value={gstin} onChange={(v) => setGstin(v.toUpperCase())} error={e("buyer.gstin")} required={false} />
+              <Field label="GSTIN" name="buyer.gstin" autoComplete="off" hint="15 characters, e.g. 29ABCDE1234F1Z5" value={gstin} onChange={(v) => setGstin(v.toUpperCase())} error={e("buyer.gstin")} required={false} />
             </div>
           )}
         </fieldset>
@@ -130,10 +130,10 @@ export function CheckoutForm({
                 ) : (
                   <div className="mt-4 grid gap-5 md:grid-cols-2">
                     <div className="md:col-span-2">
-                      <Field label="Full name" name={`attendees.${i}.name`} value={a.name} onChange={(v) => setPerson(i, "name", v)} error={e(`attendees.${i}.name`)} />
+                      <Field label="Full name" name={`attendees.${i}.name`} autoComplete={`section-attendee${i + 1} name`} value={a.name} onChange={(v) => setPerson(i, "name", v)} error={e(`attendees.${i}.name`)} />
                     </div>
-                    <Field label="Email" name={`attendees.${i}.email`} type="email" value={a.email} onChange={(v) => setPerson(i, "email", v)} error={e(`attendees.${i}.email`)} />
-                    <Field label="Mobile number" name={`attendees.${i}.phone`} type="tel" inputMode="tel" value={a.phone} onChange={(v) => setPerson(i, "phone", v)} error={e(`attendees.${i}.phone`)} />
+                    <Field label="Email" name={`attendees.${i}.email`} type="email" inputMode="email" autoComplete={`section-attendee${i + 1} email`} value={a.email} onChange={(v) => setPerson(i, "email", v)} error={e(`attendees.${i}.email`)} />
+                    <Field label="Mobile number" name={`attendees.${i}.phone`} type="tel" inputMode="tel" autoComplete={`section-attendee${i + 1} tel`} value={a.phone} onChange={(v) => setPerson(i, "phone", v)} error={e(`attendees.${i}.phone`)} />
                   </div>
                 )}
               </div>

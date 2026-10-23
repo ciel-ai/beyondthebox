@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { Nav } from "@/components/Nav";
 import { About, Awards, Exhibition, Faq, Programme, Speakers, SponsorLogos, Sponsorship } from "@/components/Sections";
 import { Tickets } from "@/components/Tickets";
+import { StickyBookingBar } from "@/components/StickyBookingBar";
 import { VisitBeacon } from "@/components/VisitBeacon";
 import { getSiteData } from "@/server/content";
 
@@ -53,6 +54,7 @@ export default async function Home() {
         <Faq faqs={d.faqs} />
       </main>
       <Footer />
+      <StickyBookingBar />
       <VisitBeacon />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     </>

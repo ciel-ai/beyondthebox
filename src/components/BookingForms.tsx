@@ -112,8 +112,8 @@ export function FindBookingForm({ expired }: { expired: boolean }) {
           That link has expired or was already used. Request a new one below.
         </p>
       )}
-      <Field label="Email used for the booking" name="email" type="email" autoComplete="email" value={email} onChange={setEmail} error={errors.email} />
-      <Field label="Booking reference" name="reference" hint="Starts with BTL26-, e.g. BTL26-7F3K9Q" value={reference} onChange={(v) => setReference(v.toUpperCase())} error={errors.reference} />
+      <Field label="Email used for the booking" name="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={setEmail} error={errors.email} />
+      <Field label="Booking reference" name="reference" autoComplete="off" hint="Starts with BTL26-, e.g. BTL26-7F3K9Q" value={reference} onChange={(v) => setReference(v.toUpperCase())} error={errors.reference} />
       <Turnstile onToken={setToken} resetKey={reset} error={errors.turnstileToken} />
       {errors.form && (
         <p role="alert" className="text-gold-deep">

@@ -24,7 +24,7 @@ export default async function SpeakerPage({ params }: { params: Promise<{ slug: 
     <>
       <Nav />
       <main id="main" className="wrap pb-32 pt-36">
-        <Link href="/speakers" className="ui link-u text-muted">All speakers</Link>
+        <Link href="/speakers" className="ui link-u inline-flex min-h-11 items-center text-muted">All speakers</Link>
         <div className="grid-12 mt-10 gap-y-12">
           <div className="col-span-12 md:col-span-6 lg:col-span-5">
             <SpeakerCard s={{ tba: false, slug: s.slug, name: s.name, role: s.role, photoUrl: s.photoUrl, xUrl: s.xUrl, linkedinUrl: s.linkedinUrl, instagramUrl: s.instagramUrl }} sizes="(min-width: 768px) 40vw, 100vw" />

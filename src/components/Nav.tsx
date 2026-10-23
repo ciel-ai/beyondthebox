@@ -1,15 +1,15 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { NAV_LINKS } from "@/lib/nav";
+import { useActiveSection } from "@/lib/useActiveSection";
 import { Wordmark } from "./brand";
 
 
 export function Nav() {
+  const active = useActiveSection();
   const [open, setOpen] = useState(false);
-  const reduce = useReducedMotion();
   const toggle = useRef<HTMLButtonElement>(null);
   const first = useRef<HTMLAnchorElement>(null);
 
@@ -31,7 +31,7 @@ export function Nav() {
   }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-hairline bg-black">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-hairline bg-black pt-[env(safe-area-inset-top)]">
       <div className="wrap flex h-[76px] items-center justify-between gap-6">
         <Link href="/" aria-label="Beyond the Limits: home" className="flex min-h-11 items-center">
           <Wordmark />
@@ -41,7 +41,11 @@ export function Nav() {
           <ul className="flex items-center gap-9">
             {NAV_LINKS.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="ui flex min-h-11 items-center text-white/85 transition-colors hover:text-gold-deep">
+                <Link
+                  href={l.href}
+                  aria-current={active === l.href ? "location" : undefined}
+                  className={`ui flex min-h-11 items-center transition-colors hover:text-gold-deep ${active === l.href ? "text-gold-deep" : "text-white/85"}`}
+                >
                   {l.label}
                 </Link>
               </li>
@@ -50,7 +54,7 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/#tickets" className="btn btn-dark btn-sm hidden sm:inline-flex">
+          <Link href="/#tickets" className="btn btn-dark btn-sm hidden md:inline-flex">
             Book tickets
           </Link>
           <button
@@ -69,15 +73,10 @@ export function Nav() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
+      {open && (
+          <div
             id="mobile-menu"
-            className="fixed inset-x-0 bottom-0 top-[77px] overflow-y-auto bg-black lg:hidden"
-            initial={reduce ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduce ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            className="fade-in fixed inset-x-0 bottom-0 top-[calc(77px+env(safe-area-inset-top))] overflow-y-auto bg-black lg:hidden"
           >
             <nav aria-label="Mobile" className="wrap flex min-h-full flex-col justify-between pb-10 pt-6">
               <ul>
@@ -98,9 +97,8 @@ export function Nav() {
                 Book tickets
               </Link>
             </nav>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </header>
   );
 }

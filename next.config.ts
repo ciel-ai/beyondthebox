@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     "/twitter-image": ["./assets/fonts/**"],
   },
   poweredByHeader: false,
+  // Inline the (small, ~9KB) stylesheet: one less request on the render path for mobile LCP.
+  experimental: { inlineCss: true },
 };
 
 export default nextConfig;

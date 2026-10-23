@@ -1,11 +1,24 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 import { computePrice, formatPaise, formatRate, type PricingConfig } from "@/lib/pricing";
 import type { TierCodeValue } from "@/lib/schemas";
 import { CheckIcon } from "./brand";
+
+/**
+ * Money with the ₹ sign in the system font. Manrope's ₹ lives in its latin-ext file (15KB),
+ * which would otherwise download on the home page just for this glyph (mobile LCP budget).
+ */
+function Money({ paise, whole }: { paise: number; whole?: boolean }) {
+  const text = formatPaise(paise, { whole });
+  return (
+    <>
+      <span className="rupee">₹</span>
+      {text.replace("₹", "")}
+    </>
+  );
+}
 
 export type TicketTierView = {
   code: TierCodeValue;
@@ -98,7 +111,9 @@ function Ticket({
           {t.name}
         </h3>
         <p className="mt-[2cqi] flex items-baseline gap-2">
-          <span className="tnum text-[8.5cqi] font-bold leading-none">{formatPaise(t.pricePaise, { whole: true })}</span>
+          <span className="tnum text-[8.5cqi] font-bold leading-none">
+            <Money paise={t.pricePaise} whole />
+          </span>
           <span className={`text-[max(12px,3cqi)] font-medium ${m.soft}`}>+ GST</span>
         </p>
         <ul className="mt-auto space-y-[0.6cqi] text-[max(13px,3.4cqi)] leading-[1.35]" aria-label={`${t.name} inclusions`}>
@@ -179,7 +194,6 @@ export function Tickets({
   dateLabel: string;
   venue: string;
 }) {
-  const reduce = useReducedMotion();
   const [selected, setSelected] = useState<TierCodeValue | null>(null);
   const [qty, setQty] = useState<Record<string, number>>(Object.fromEntries(tiers.map((t) => [t.code, 1])));
 
@@ -221,15 +235,10 @@ export function Tickets({
         </div>
 
         <div aria-live="polite">
-          <AnimatePresence initial={false}>
-            {tier && price && (
-              <motion.div
+          {tier && price && (
+              <div
                 key="summary"
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, y: 8 }}
-                transition={{ duration: 0.22 }}
-                className="mt-8 grid gap-6 rounded-sm border border-hairline bg-surface p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8"
+                className="rise-in mt-8 grid gap-6 rounded-sm border border-hairline bg-surface p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8"
               >
                 <dl className="grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-4">
                   <div className="col-span-2 sm:col-span-4">
@@ -240,27 +249,26 @@ export function Tickets({
                   </div>
                   <div>
                     <dt className="meta text-muted">Subtotal</dt>
-                    <dd className="tnum font-semibold">{formatPaise(price.subtotalPaise)}</dd>
+                    <dd className="tnum font-semibold"><Money paise={price.subtotalPaise} /></dd>
                   </div>
                   <div>
                     <dt className="meta text-muted">GST ({formatRate(pricing.gstRateBps)})</dt>
-                    <dd className="tnum font-semibold">{formatPaise(price.taxPaise + price.feeTaxPaise)}</dd>
+                    <dd className="tnum font-semibold"><Money paise={price.taxPaise + price.feeTaxPaise} /></dd>
                   </div>
                   <div>
                     <dt className="meta text-muted">Fees</dt>
-                    <dd className="tnum font-semibold">{formatPaise(price.feePaise)}</dd>
+                    <dd className="tnum font-semibold"><Money paise={price.feePaise} /></dd>
                   </div>
                   <div>
                     <dt className="meta text-muted">Total</dt>
-                    <dd className="tnum text-[20px] font-bold text-gold-deep">{formatPaise(price.totalPaise)}</dd>
+                    <dd className="tnum text-[20px] font-bold text-gold-deep"><Money paise={price.totalPaise} /></dd>
                   </div>
                 </dl>
                 <Link href={`/checkout/details?tier=${tier.code}&qty=${price.quantity}`} className="btn btn-leaf w-full md:w-auto">
                   Continue to checkout
                 </Link>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
       </div>
     </section>

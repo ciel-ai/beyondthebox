@@ -68,7 +68,7 @@ Both fonts load with `next/font/google`. Anton has one weight, so hierarchy come
 - Admin: `DataTable` (filter, search, CSV), `StatTile`, `CapacityBar`, `FunnelChart`, `StatusBadge`, `AuditTrail`, `NoteThread`.
 
 ### 4. Motion (complete list)
-1. Hero entrance: the strip rises and fades in, then the marquee follows (Framer, about 120ms stagger).
+1. Hero entrance: the strip rises and fades in, then the marquee follows (CSS keyframes since change request 1: nav first, strip at 150ms, marquee at 270ms).
 2. Strip loop moving left and marquee loop moving right (CSS keyframes; they pause off-screen).
 3. Drag cursor follow and momentum with snap on the speakers row.
 4. State changes the user causes: ticket select and summary bar, accordion, form success, copy confirmation, mobile menu, check-in result.

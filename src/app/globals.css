@@ -34,13 +34,21 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-behavior: smooth;
-    scroll-padding-top: 88px;
+    /* clip, not hidden: sticky elements keep working */
+    overflow-x: clip;
   }
-  @media (prefers-reduced-motion: reduce) {
+  @media (prefers-reduced-motion: no-preference) {
     html {
-      scroll-behavior: auto;
+      scroll-behavior: smooth;
     }
+  }
+  /* Anchored sections land below the fixed header (change request §2). The same offset applies to
+     every other scroll-into-view target (a focused form field, an error) so nothing lands under it.
+     scroll-margin-top only affects vertical scroll-into-view, not the horizontal snap rows. */
+  :where(*),
+  section[id],
+  footer[id] {
+    scroll-margin-top: calc(76px + env(safe-area-inset-top) + 16px);
   }
   body {
     background: var(--color-black);
@@ -214,6 +222,206 @@
   }
   &[aria-invalid="true"] {
     border-color: var(--color-gold-deep);
+  }
+}
+
+/* ---------- hero: fits the screen (height and width drive the sizes) ---------- */
+
+.hero {
+  --header-space: calc(76px + env(safe-area-inset-top));
+  --tilt: -4deg;
+  --tilt-room: calc(100vw * 0.035);
+  --gap: clamp(12px, 2svh, 24px);
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: var(--header-space) minmax(0, 1fr) auto auto;
+  /* One column the width of the viewport: the marquee's very wide line must not size it. */
+  grid-template-columns: minmax(0, 1fr);
+  overflow-x: clip;
+}
+@media (min-width: 768px) {
+  .hero {
+    --tilt: -3deg;
+    --tilt-room: calc(100vw * 0.03);
+  }
+}
+.hero__strip {
+  min-height: 0;
+  display: flex;
+  align-items: center; /* very tall screens: band centred in the spare space */
+  padding-block: var(--tilt-room); /* reserves the tilt's extra height */
+}
+.hero__band {
+  height: 100%;
+  width: 124vw;
+  margin-left: -12vw;
+  display: flex;
+  align-items: center;
+  rotate: var(--tilt);
+}
+.hero__track {
+  display: flex;
+  height: min(clamp(150px, 36svh, 440px), 100%);
+}
+.hero__frame {
+  position: relative;
+  flex: none;
+  height: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.hero__marquee {
+  margin-top: var(--gap);
+  overflow-x: clip;
+  overflow-y: visible; /* glyphs are never clipped vertically */
+  font-size: min(18vw, 12svh);
+  line-height: 0.9;
+}
+.hero__marquee .display {
+  line-height: 0.9;
+}
+@media (min-width: 768px) {
+  .hero__marquee {
+    font-size: min(9.5vw, 13svh, 200px);
+  }
+}
+.hero__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap);
+  padding-top: calc(var(--gap) * 1.5);
+  padding-bottom: max(clamp(16px, 3svh, 32px), env(safe-area-inset-bottom));
+  text-align: center;
+}
+.hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * 0.5);
+}
+.hero__cta {
+  width: 100%;
+  max-width: 360px;
+}
+.rupee {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+.hero__nowrap {
+  white-space: nowrap;
+}
+/* Below 768px the date and venue sit on two fixed lines. */
+.hero__sep {
+  display: none;
+}
+.hero__venue {
+  display: block;
+}
+@media (min-width: 768px) {
+  .hero__sep {
+    display: inline;
+  }
+  .hero__venue {
+    display: inline;
+  }
+}
+@media (min-width: 768px) {
+  .hero__cta {
+    width: auto;
+  }
+}
+/* Very short screens (landscape phones): grow with content, compact strip, meta beside CTA. */
+@media (max-height: 520px) {
+  .hero {
+    height: auto;
+    min-height: 100svh;
+    grid-template-rows: var(--header-space) auto auto auto;
+  }
+  .hero__track {
+    height: clamp(72px, 24svh, 150px);
+  }
+}
+@media (max-height: 520px) and (min-width: 600px) {
+  .hero__meta {
+    flex-direction: row;
+    justify-content: center;
+    gap: 32px;
+    text-align: left;
+  }
+  .hero__cta {
+    width: auto;
+  }
+}
+/* Very tall screens: strip capped at 440px and marquee at 200px, so the spare height goes
+   above and below the whole block instead of inside the strip row. */
+@media (min-height: 1000px) and (min-width: 768px) {
+  .hero {
+    grid-template-rows: var(--header-space) minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  }
+  .hero__strip {
+    grid-row: 3;
+  }
+  .hero__marquee {
+    grid-row: 4;
+  }
+  .hero__meta {
+    grid-row: 5;
+  }
+  .hero__band {
+    height: auto;
+  }
+  .hero__track {
+    height: clamp(150px, 36svh, 440px);
+  }
+}
+.hero[data-paused] .loop-left,
+.hero[data-paused] .loop-right {
+  animation-play-state: paused;
+}
+
+/* ---------- entrance and state-change animations (CSS: no JS on the critical path) ---------- */
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+/* Nav intro is at 0ms; the hero strip follows at 150ms and the marquee 120ms after it. */
+.hero-enter {
+  animation: hero-rise 900ms cubic-bezier(0.2, 0.7, 0.1, 1) 150ms both;
+}
+.hero-enter--late {
+  animation-delay: 270ms;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.fade-in {
+  animation: fade-in 180ms ease-out;
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+.rise-in {
+  animation: rise-in 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-enter,
+  .fade-in,
+  .rise-in {
+    animation: none;
   }
 }
 

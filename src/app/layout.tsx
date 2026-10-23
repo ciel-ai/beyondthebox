@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Manrope } from "next/font/google";
 import "./globals.css";
 
-const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton", display: "swap" });
+// adjustFontFallback: a metric-matched fallback so the marquee doesn't shift when Anton arrives.
+const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton", display: "swap", adjustFontFallback: true });
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 
 const url = process.env.APP_URL ?? "http://localhost:3000";
@@ -18,7 +19,13 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title, description },
 };
 
-export const viewport: Viewport = { themeColor: "#000000", colorScheme: "dark" };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+  colorScheme: "dark",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

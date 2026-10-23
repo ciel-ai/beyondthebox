@@ -329,3 +329,18 @@ Tests cover the failure path, the lapsed path, exhausted retries and the 10-minu
   - the `refund_speed` values it accepts (`normal`, `optimum`);
   - the order of webhook events under manual capture;
   - mobile Checkout, including the UPI app hand-off.
+
+### 18. Change request 1: implementation notes (what was built before the vendor source arrived)
+- **Framer Motion removed.** The hero entrance, the mobile menu fade and the ticket summary bar are now CSS keyframes, all off under reduced motion. That took 48 KB (gzipped) of JavaScript off the home page's critical path, and the entrance no longer waits for hydration.
+- **Mobile LCP budget** (Lighthouse simulated slow 4G):
+  - The real LCP is ~65–95 ms (the date line, which paints at first contentful paint). The simulated value is dominated by React and Next's runtime (~150 KB gzipped), which is requested before first paint.
+  - Two measures got it under budget: inline CSS (`experimental.inlineCss`), and the ₹ sign on the home page rendered in the system font, which avoids a 15 KB Manrope latin-ext download.
+  - Median of 5 runs: LCP 2,391 ms (spread 1,956–2,464 ms), performance 98, CLS 0, TBT 4 ms. The margin is thin.
+  - Once real stage photos are added, the LCP element will become a hero photo. They must be AVIF/WebP at ~330 px wide via next/image, and the budget re-checked.
+- **CLS from a font swap** (0.055 under 4× CPU) is fixed. The hero's meta block has a fixed line structure, so its height can't change when Manrope swaps in; otherwise the strip, which takes the remaining height, would shift.
+- **Scroll offsets:** sections get the specified `scroll-margin-top`. Every other scroll-into-view target gets the same offset via `:where(*)`, so a focused field never lands under the fixed header. Chrome centres on focus anyway; Safari aligns to the nearest edge.
+- **Sticky booking bar:** it treats the hero CTA as gone once it slides under the fixed header (`rootMargin: -80px` on top), and hides over the tickets section and the footer.
+- **Tests:**
+  - Playwright (system Chrome), 16 tests: hero fit at all 12 viewports (a–d) with screenshots, the sticky bar, and the focused first error being visible.
+  - `npm run test:layout`: 12 viewports × 9 pages, checking no overflow, no clipped text, touch targets ≥ 44 px and inputs ≥ 16 px.
+  - `npm run test:perf`: median of 5 runs, plus a 4× CPU DevTools run.
