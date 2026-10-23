@@ -145,3 +145,4 @@ Capture retries back off for up to 8 attempts, and then an admin alert is sent.
 - **Never exposed:** personal data never appears in QR codes, URLs or logs. QR codes carry a ticket ID and a signature.
 - **Card data:** Razorpay processes all of it; we store only Razorpay IDs.
 - **Policies:** the legal pages are **templates** marked "[Pending organiser approval]". They are not legal advice and must be reviewed by the organiser's lawyer.
+# beyondthebox
