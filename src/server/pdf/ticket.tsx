@@ -22,9 +22,9 @@ const GOLD = "#DDBB4B";
 const s = StyleSheet.create({
   page: { backgroundColor: "#000000", color: "#FFFFFF", fontFamily: "Manrope", padding: 36 },
   top: { flexDirection: "row", justifyContent: "space-between", fontSize: 9, color: "#A6A6A6", letterSpacing: 1 },
-  title: { fontFamily: "Anton", fontSize: 44, lineHeight: 0.95, marginTop: 24, textTransform: "uppercase" },
+  title: { fontFamily: "Anton", fontSize: 44, lineHeight: 1.15, marginTop: 20, textTransform: "uppercase" },
   the: { color: GOLD },
-  subtitle: { fontSize: 11, color: "#A6A6A6", marginTop: 6 },
+  subtitle: { fontSize: 11, color: "#A6A6A6", marginTop: 4 },
   rule: { borderBottomWidth: 1, borderBottomColor: "#333333", marginVertical: 20 },
   body: { flexDirection: "row", gap: 24 },
   fields: { flex: 1, gap: 14 },

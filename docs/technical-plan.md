@@ -266,3 +266,14 @@ After that, an end-to-end run with Razorpay **test mode** on staging (test cards
 | No personal data in QR codes, URLs or logs | The QR carries ticket ID + HMAC. URLs carry only the reference or a one-time hashed token. Sentry and logs are scrubbed. Webhook payloads (which do contain email and phone) live only in the access-restricted `PaymentEvent` table, encrypted. |
 | No accent but gold | Green, amber and red appear only on staff screens (needs your approval). |
 | Glassmorphism | One exception, the drag cursor, as briefed. |
+
+### 14. Phase 1 implementation notes (where the build refines the plan)
+- **Clocks:** job scheduling uses the database clock only (`now()` in SQL). Mixing app and DB clocks caused a flaky test when the Docker clock drifted, so it was removed.
+- **Invoice series:** TEST-mode bookings use their own series (`TST/26-27/00001`, marked "not a tax invoice"), so testing never consumes live GST numbers.
+- **Booking links:** confirmation and payment-failed emails carry a reusable link (valid until 30 days after the event); Find-my-booking links are single-use and expire in 30 minutes. Only token hashes are stored.
+- **Local gateway:** `PAYMENT_PROVIDER=fake` provides a `/dev/checkout` page and a fake adapter with real HMAC signing. The env validation refuses it outside `DEPLOY_ENV=local`.
+- **Speakers row:** touch devices use CSS scroll-snap. Fine pointers use JS snapping to positions that leave the first card a third cut off, because CSS can't express a negative snap offset. The row's start stays reachable.
+- **Not yet wired (by design):**
+  - the sponsorship and exhibition buttons open email until the Phase 3 forms exist
+  - "Nominate now" shows "Nominations open soon" until dates are set
+  - social links and contact details show bracketed placeholders until set

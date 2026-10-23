@@ -40,7 +40,8 @@ export async function sendTemplate(job: Extract<JobPayload, { kind: "EMAIL" }>, 
     venueLabel: venueLabel(settings.venueName),
   };
   const payment = job.paymentId ? await db.payment.findUnique({ where: { id: job.paymentId } }) : null;
-  const key = `${job.template}:${job.bookingId}:${job.paymentId ?? ""}`;
+  // requestId distinguishes deliberate resends from retries of the same job.
+  const key = `${job.template}:${job.bookingId}:${job.paymentId ?? ""}:${job.requestId ?? ""}`;
 
   switch (job.template) {
     case "booking_confirmed": {
